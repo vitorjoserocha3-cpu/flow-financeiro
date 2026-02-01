@@ -3,116 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flow - Thais e Vitor</title>
+    <title>Flow Financeiro - Vitor e Thais</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary-bg: linear-gradient(180deg, #0f0a2d 0%, #5a0b4d 100%); --glass: rgba(255, 255, 255, 0.1); --receita: #51cf66; --gasto: #ff6b6b; }
-        body { margin: 0; font-family: 'Roboto', sans-serif; background: var(--primary-bg); min-height: 100vh; color: white; overflow-x: hidden; }
-        .page { display: none; width: 100%; max-width: 400px; margin: 0 auto; padding: 20px; box-sizing: border-box; min-height: 100vh; flex-direction: column; }
-        .page.active { display: flex; }
-        .balance-card { background: var(--glass); backdrop-filter: blur(15px); border-radius: 28px; padding: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-top: 10px; }
-        .input-glass { background: var(--glass); border: none; border-radius: 20px; padding: 18px; color: white; margin-bottom: 15px; width: 100%; box-sizing: border-box; outline: none; }
-        .btn-salvar { background: white; color: #5a0b4d; border: none; padding: 20px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
-        .type-selector { display: flex; background: var(--glass); border-radius: 15px; padding: 5px; margin-bottom: 20px; }
-        .type-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; color: white; background: transparent; cursor: pointer; font-weight: bold; }
-        .type-btn.active-gasto { background: var(--gasto); }
-        .type-btn.active-receita { background: var(--receita); color: #0f0a2d; }
-        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: rgba(15,10,45,0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); }
-        .nav-item { opacity: 0.5; text-align: center; font-size: 0.7rem; cursor: pointer; }
-        .nav-item.active { opacity: 1; }
-        .item-card { background: rgba(255,255,255,0.05); border-radius: 15px; padding: 15px; display: flex; justify-content: space-between; margin-bottom: 10px; }
+        :root { --primary-bg: linear-gradient(180deg, #0f0a2d 0%, #3d0b5a 100%); --glass: rgba(255, 255, 255, 0.1); }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--primary-bg); color: white; min-height: 100vh; }
+        .page { display: none; padding: 20px; max-width: 500px; margin: 0 auto; padding-bottom: 100px; }
+        .active { display: block; }
+        
+        /* Estilo Login */
+        .login-container { text-align: center; padding-top: 50px; }
+        .input-box { background: var(--glass); border: 1px solid rgba(255,255,255,0.2); border-radius: 15px; padding: 15px; color: white; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        .btn-main { background: #7b2cbf; color: white; border: none; padding: 15px; border-radius: 15px; width: 100%; font-weight: bold; cursor: pointer; }
+        
+        /* Cards e Gráficos */
+        .card { background: var(--glass); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .balance { font-size: 2rem; font-weight: bold; text-align: center; }
+        canvas { max-width: 100%; margin-top: 20px; }
+
+        /* Menu */
+        .nav { position: fixed; bottom: 0; width: 100%; background: rgba(15, 10, 45, 0.9); display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); }
+        .nav-btn { background: none; border: none; color: white; opacity: 0.6; font-size: 0.8rem; cursor: pointer; }
+        .nav-btn.active { opacity: 1; color: #9d4edd; }
     </style>
 </head>
 <body>
 
-    <div id="home-page" class="page active">
-        <h2>Olá, Thais e Vitor</h2>
-        <div class="balance-card">
-            <div style="opacity: 0.6; font-size: 0.8rem;">SALDO TOTAL</div>
-            <div id="saldo-texto" style="font-size: 2.2rem; font-weight: bold;">R$ 0,00</div>
+    <div id="login-page" class="page active">
+        <div class="login-container">
+            <h2>💜 Flow Financeiro</h2>
+            <p>Acesso exclusivo Vitor & Thais</p>
+            <input type="email" id="email" class="input-box" placeholder="E-mail">
+            <input type="password" id="password" class="input-box" placeholder="Senha">
+            <button class="btn-main" onclick="handleLogin()">Entrar</button>
+            <p style="font-size: 0.8rem; margin-top: 15px; opacity: 0.7;">Segurança via Firebase Auth</p>
         </div>
-        <div id="lista-lancamentos" style="margin-top: 20px; padding-bottom: 80px;">
-            </div>
+    </div>
+
+    <div id="home-page" class="page">
+        <h3>Olá, Vitor e Thais 👋</h3>
+        <div class="card">
+            <small>Saldo Disponível</small>
+            <div class="balance" id="saldo-total">R$ 0,00</div>
+        </div>
+        <div class="card">
+            <canvas id="graficoGastos"></canvas>
+        </div>
     </div>
 
     <div id="add-page" class="page">
-        <h3 style="text-align: center;">Novo Lançamento</h3>
-        <div class="type-selector">
-            <button id="btn-g" class="type-btn active-gasto" onclick="setTipo('gasto')">GASTO</button>
-            <button id="btn-r" class="type-btn" onclick="setTipo('receita')">RECEITA</button>
-        </div>
-        <input type="text" id="val" class="input-glass" placeholder="R$ 0,00" style="font-size: 2rem; text-align: center;">
-        <input type="text" id="desc" class="input-glass" placeholder="Descrição (Ex: Aluguel)">
-        <input type="date" id="data" class="input-glass">
-        <button class="btn-salvar" onclick="salvarNoFirebase()">Salvar Lançamento</button>
-        <button onclick="showPage('home-page')" style="background:none; border:none; color:white; margin-top:10px;">Cancelar</button>
+        <h3>Novo Lançamento</h3>
+        <input type="text" id="desc" class="input-box" placeholder="Ex: Mercado, Aluguel...">
+        <input type="number" id="val" class="input-box" placeholder="Valor R$">
+        <select id="tipo" class="input-box">
+            <option value="gasto">Despesa 🔻</option>
+            <option value="receita">Receita 🔺</option>
+        </select>
+        <button class="btn-main" onclick="salvarDados()">Confirmar Lançamento</button>
     </div>
 
-    <nav class="nav-bar">
-        <div class="nav-item active" onclick="showPage('home-page')">🏠<br>Home</div>
-        <div class="nav-item" onclick="showPage('add-page')">➕<br>Lançar</div>
+    <nav class="nav" id="main-nav" style="display: none;">
+        <button class="nav-btn active" onclick="showPage('home-page')">🏠<br>Home</button>
+        <button class="nav-btn" onclick="showPage('add-page')">➕<br>Lançar</button>
+        <button class="nav-btn" onclick="auth.signOut(); location.reload();">🚪<br>Sair</button>
     </nav>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+        // CONFIGURAÇÃO DO SEU FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCEHEzN_rA5twVvejhJK-EPPcq6zE8xWM",
             authDomain: "flowfinanceiro-97f2e.firebaseapp.com",
             projectId: "flowfinanceiro-97f2e",
-            storageBucket: "flowfinanceiro-97f2e.firebasestorage.app",
+            storageBucket: "flowfinanceiro-97f2e.appspot.com",
             messagingSenderId: "82511718763",
             appId: "1:82511718763:web:38de1d268746dac590c42e"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        window.currentType = 'gasto';
+        // FUNÇÃO DE LOGIN
+        window.handleLogin = () => {
+            const e = document.getElementById('email').value;
+            const s = document.getElementById('password').value;
+            signInWithEmailAndPassword(auth, e, s)
+                .catch(err => alert("Erro: " + err.message));
+        };
 
+        // CONTROLE DE TELAS
         window.showPage = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         };
 
-        window.setTipo = (t) => {
-            window.currentType = t;
-            document.getElementById('btn-g').className = t === 'gasto' ? 'type-btn active-gasto' : 'type-btn';
-            document.getElementById('btn-r').className = t === 'receita' ? 'type-btn active-receita' : 'type-btn';
-        };
+        // MONITORAR LOGIN
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                showPage('home-page');
+                document.getElementById('main-nav').style.display = 'flex';
+                carregarDados();
+            }
+        });
 
-        window.salvarNoFirebase = async () => {
-            const v = document.getElementById('val').value.replace(/[R$\s.]/g, '').replace(',', '.');
+        // SALVAR NO FIREBASE
+        window.salvarDados = async () => {
             const d = document.getElementById('desc').value;
-            const dt = document.getElementById('data').value;
-
-            if(!v || !d) return alert("Preencha tudo!");
+            const v = parseFloat(document.getElementById('val').value);
+            const t = document.getElementById('tipo').value;
+            
+            if(!d || !v) return alert("Preencha os campos!");
 
             await addDoc(collection(db, "lancamentos"), {
-                valor: parseFloat(v),
-                desc: d,
-                data: dt,
-                tipo: window.currentType,
-                criadoEm: Date.now()
+                descricao: d,
+                valor: v,
+                tipo: t,
+                data: new Date().toISOString(),
+                usuario: auth.currentUser.email
             });
-            alert("Salvo!");
+            alert("Salvo com sucesso!");
             showPage('home-page');
         };
 
-        onSnapshot(query(collection(db, "lancamentos"), orderBy("criadoEm", "desc")), (snap) => {
-            let html = ""; let total = 0;
-            snap.forEach(doc => {
-                const i = doc.data();
-                total += i.tipo === 'receita' ? i.valor : -i.valor;
-                html += `<div class="item-card"><span>${i.desc}</span><b style="color:${i.tipo==='receita'?'#51cf66':'#ff6b6b'}">${i.tipo==='receita'?'+':'-'} R$ ${i.valor.toFixed(2)}</b></div>`;
-            });
-            document.getElementById('lista-lancamentos').innerHTML = html;
-            document.getElementById('saldo-texto').innerText = `R$ ${total.toFixed(2)}`;
-        });
+        // CARREGAR DADOS E GRÁFICO
+        let meuGrafico;
+        function carregarDados() {
+            const q = query(collection(db, "lancamentos"), orderBy("data", "desc"));
+            onSnapshot(q, (snapshot) => {
+                let total = 0;
+                let gastosMap = { "Alimentação": 0, "Casa": 0, "Lazer": 0, "Outros": 0 };
+                
+                snapshot.forEach(doc => {
+                    const item = doc.data();
+                    if(item.tipo === 'receita') total += item.valor;
+                    else {
+                        total -= item.valor;
+                        gastosMap["Outros"] += item.valor; // Simplificado para o exemplo
+                    }
+                });
 
-        document.getElementById('data').valueAsDate = new Date();
+                document.getElementById('saldo-total').innerText = `R$ ${total.toFixed(2)}`;
+                atualizarGrafico(gastosMap);
+            });
+        }
+
+        function atualizarGrafico(dados) {
+            const ctx = document.getElementById('graficoGastos').getContext('2d');
+            if (meuGrafico) meuGrafico.destroy();
+            meuGrafico = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(dados),
+                    datasets: [{
+                        data: Object.values(dados),
+                        backgroundColor: ['#ff6b6b', '#4ecdc4', '#ffe66d', '#7b2cbf']
+                    }]
+                },
+                options: { plugins: { legend: { labels: { color: 'white' } } } }
+            });
+        }
     </script>
 </body>
 </html>
