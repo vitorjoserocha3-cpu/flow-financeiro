@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow - Thais e Vitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-bg: linear-gradient(180deg, #0f0a2d 0%, #5a0b4d 100%); --glass: rgba(255, 255, 255, 0.1); --receita: #51cf66; --gasto: #ff6b6b; }
+        body { margin: 0; font-family: 'Roboto', sans-serif; background: var(--primary-bg); min-height: 100vh; color: white; overflow-x: hidden; }
+        .page { display: none; width: 100%; max-width: 400px; margin: 0 auto; padding: 20px; box-sizing: border-box; min-height: 100vh; flex-direction: column; }
+        .page.active { display: flex; }
+        .balance-card { background: var(--glass); backdrop-filter: blur(15px); border-radius: 28px; padding: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-top: 10px; }
+        .input-glass { background: var(--glass); border: none; border-radius: 20px; padding: 18px; color: white; margin-bottom: 15px; width: 100%; box-sizing: border-box; outline: none; }
+        .btn-salvar { background: white; color: #5a0b4d; border: none; padding: 20px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
+        .type-selector { display: flex; background: var(--glass); border-radius: 15px; padding: 5px; margin-bottom: 20px; }
+        .type-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; color: white; background: transparent; cursor: pointer; font-weight: bold; }
+        .type-btn.active-gasto { background: var(--gasto); }
+        .type-btn.active-receita { background: var(--receita); color: #0f0a2d; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: rgba(15,10,45,0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); }
+        .nav-item { opacity: 0.5; text-align: center; font-size: 0.7rem; cursor: pointer; }
+        .nav-item.active { opacity: 1; }
+        .item-card { background: rgba(255,255,255,0.05); border-radius: 15px; padding: 15px; display: flex; justify-content: space-between; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="home-page" class="page active">
+        <h2>Olá, Thais e Vitor</h2>
+        <div class="balance-card">
+            <div style="opacity: 0.6; font-size: 0.8rem;">SALDO TOTAL</div>
+            <div id="saldo-texto" style="font-size: 2.2rem; font-weight: bold;">R$ 0,00</div>
+        </div>
+        <div id="lista-lancamentos" style="margin-top: 20px; padding-bottom: 80px;">
+            </div>
+    </div>
+
+    <div id="add-page" class="page">
+        <h3 style="text-align: center;">Novo Lançamento</h3>
+        <div class="type-selector">
+            <button id="btn-g" class="type-btn active-gasto" onclick="setTipo('gasto')">GASTO</button>
+            <button id="btn-r" class="type-btn" onclick="setTipo('receita')">RECEITA</button>
+        </div>
+        <input type="text" id="val" class="input-glass" placeholder="R$ 0,00" style="font-size: 2rem; text-align: center;">
+        <input type="text" id="desc" class="input-glass" placeholder="Descrição (Ex: Aluguel)">
+        <input type="date" id="data" class="input-glass">
+        <button class="btn-salvar" onclick="salvarNoFirebase()">Salvar Lançamento</button>
+        <button onclick="showPage('home-page')" style="background:none; border:none; color:white; margin-top:10px;">Cancelar</button>
+    </div>
+
+    <nav class="nav-bar">
+        <div class="nav-item active" onclick="showPage('home-page')">🏠<br>Home</div>
+        <div class="nav-item" onclick="showPage('add-page')">➕<br>Lançar</div>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEHEzN_rA5twVvejhJK-EPPcq6zE8xWM",
+            authDomain: "flowfinanceiro-97f2e.firebaseapp.com",
+            projectId: "flowfinanceiro-97f2e",
+            storageBucket: "flowfinanceiro-97f2e.firebasestorage.app",
+            messagingSenderId: "82511718763",
+            appId: "1:82511718763:web:38de1d268746dac590c42e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.currentType = 'gasto';
+
+        window.showPage = (id) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        };
+
+        window.setTipo = (t) => {
+            window.currentType = t;
+            document.getElementById('btn-g').className = t === 'gasto' ? 'type-btn active-gasto' : 'type-btn';
+            document.getElementById('btn-r').className = t === 'receita' ? 'type-btn active-receita' : 'type-btn';
+        };
+
+        window.salvarNoFirebase = async () => {
+            const v = document.getElementById('val').value.replace(/[R$\s.]/g, '').replace(',', '.');
+            const d = document.getElementById('desc').value;
+            const dt = document.getElementById('data').value;
+
+            if(!v || !d) return alert("Preencha tudo!");
+
+            await addDoc(collection(db, "lancamentos"), {
+                valor: parseFloat(v),
+                desc: d,
+                data: dt,
+                tipo: window.currentType,
+                criadoEm: Date.now()
+            });
+            alert("Salvo!");
+            showPage('home-page');
+        };
+
+        onSnapshot(query(collection(db, "lancamentos"), orderBy("criadoEm", "desc")), (snap) => {
+            let html = ""; let total = 0;
+            snap.forEach(doc => {
+                const i = doc.data();
+                total += i.tipo === 'receita' ? i.valor : -i.valor;
+                html += `<div class="item-card"><span>${i.desc}</span><b style="color:${i.tipo==='receita'?'#51cf66':'#ff6b6b'}">${i.tipo==='receita'?'+':'-'} R$ ${i.valor.toFixed(2)}</b></div>`;
+            });
+            document.getElementById('lista-lancamentos').innerHTML = html;
+            document.getElementById('saldo-texto').innerText = `R$ ${total.toFixed(2)}`;
+        });
+
+        document.getElementById('data').valueAsDate = new Date();
+    </script>
+</body>
+</html>
